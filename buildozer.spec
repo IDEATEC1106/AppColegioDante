@@ -8,6 +8,8 @@ version = 0.1
 requirements = python3,kivy
 orientation = portrait
 fullscreen = 0
+# (str) Version of python to use
+android.python_version = 3.11
 # (str) Target version of Android to compile for
 android.api_target = 31
 

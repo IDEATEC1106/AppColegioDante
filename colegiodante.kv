@@ -1,0 +1,541 @@
+ScreenManager:
+    LoginScreen:
+    HomeScreen:
+    StudentInfoScreen:
+    PaymentsScreen:
+    NotificationsScreen: 
+
+<LoginScreen>:
+    name: 'login'
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(24)
+        spacing: dp(18)
+
+        Widget:
+            size_hint_y: None
+            height: dp(20)
+
+        Image:
+            source: 'escudodante.png'
+            size_hint: None, None
+            size: dp(130), dp(130)
+            pos_hint: {'center_x': 0.5}
+            allow_stretch: True
+
+        MDLabel:
+            text: "COLEGIO DANTE ALIGHIERI"
+            font_style: "Headline"
+            role: "small"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.0, 0.45, 0.45, 1
+            bold: True
+
+        MDLabel:
+            text: "Aplicativo Institucional"
+            font_style: "Title"
+            role: "small"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.4, 0.6, 0.8, 1
+
+        Widget:
+            size_hint_y: None
+            height: dp(10)
+
+        MDTextField:
+            id: user_input
+            mode: "outlined"
+            size_hint_x: 0.85
+            pos_hint: {'center_x': 0.5}
+            MDTextFieldHintText:
+                text: "Usuario (Código)"
+
+        MDTextField:
+            id: password_input
+            mode: "outlined"
+            password: True
+            size_hint_x: 0.85
+            pos_hint: {'center_x': 0.5}
+            MDTextFieldHintText:
+                text: "Contraseña"
+
+        Widget:
+            size_hint_y: None
+            height: dp(15)
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.85
+            pos_hint: {'center_x': 0.5}
+            on_release: root.verificar_login()
+            MDButtonText:
+                text: "INGRESAR"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        Widget:
+            size_hint_y: 1
+
+
+<HomeScreen>:
+    name: 'home'
+    canvas.before:
+        Color:
+            rgba: 0.96, 0.97, 0.99, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(14)
+
+        MDCard:
+            orientation: 'vertical'
+            padding: dp(14)
+            spacing: dp(6)
+            size_hint_y: None
+            height: dp(120)
+            md_bg_color: 0.88, 0.94, 0.98, 1
+
+            MDLabel:
+                id: header_bienvenida
+                text: "Apoderado: cargando..."
+                font_style: "Title"
+                role: "small"
+                theme_text_color: "Custom"
+                text_color: 0.0, 0.45, 0.45, 1
+                bold: True
+
+            MDLabel:
+                id: header_detalles
+                text: "Estudiante: cargando..."
+                font_style: "Body"
+                role: "small"
+                theme_text_color: "Secondary"
+
+        Widget:
+            size_hint_y: None
+            height: dp(5)
+
+        MDLabel:
+            text: "MENÚ PRINCIPAL"
+            font_style: "Label"
+            role: "medium"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.0, 0.5, 0.5, 1
+            bold: True
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.ir_a_informacion_estudiante()  # Opción 1: Información
+            MDButtonText:
+                text: "1. Información del Estudiante Matriculado"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.ir_a_control_pagos()  # <-- CORREGIDO PARA EL BOTÓN 2 (PAGOS REALES)
+            MDButtonText:
+                text: "2. Estado de Cuenta - PAGOS"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.ir_a_comunicados()  # <-- CORREGIDO PARA EL BOTÓN 3 (COMUNICADOS REALES)
+            MDButtonText:
+                text: "3. Comunicados Informativos"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        Widget:
+            size_hint_y: None
+            height: dp(15)
+
+        MDButton:
+            style: "tonal"
+            md_bg_color: 0.88, 0.94, 0.98, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.logout()
+            MDButtonText:
+                text: "4. Salir del sistema"
+                theme_text_color: "Custom"
+                text_color: 0.0, 0.45, 0.45, 1
+
+        Widget:
+            size_hint_y: 1
+
+<StudentInfoScreen>:
+    name: 'student_info'
+    canvas.before:
+        Color:
+            rgba: 0.96, 0.97, 0.99, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        MDLabel:
+            text: "INFORMACIÓN DEL ESTUDIANTE"
+            font_style: "Headline"
+            role: "small"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.0, 0.45, 0.45, 1
+            bold: True
+            size_hint_y: None
+            height: dp(40)
+
+        ScrollView:
+            do_scroll_x: False
+            do_scroll_y: True
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(15)
+                padding: dp(2)
+
+                MDCard:
+                    orientation: 'vertical'
+                    padding: dp(16)
+                    spacing: dp(16)
+                    size_hint_y: None
+                    height: self.minimum_height
+                    md_bg_color: 0.88, 0.94, 0.98, 1
+
+                    BoxLayout:
+                        orientation: 'vertical'
+                        spacing: dp(2)
+                        size_hint_y: None
+                        height: dp(45)
+                        MDLabel:
+                            text: "CÓDIGO INTERNO"
+                            font_style: "Label"
+                            role: "small"
+                            theme_text_color: "Secondary"
+                        MDLabel:
+                            id: info_codigo
+                            text: "-"
+                            font_style: "Body"
+                            role: "medium"
+                            bold: True
+
+                    BoxLayout:
+                        orientation: 'vertical'
+                        spacing: dp(2)
+                        size_hint_y: None
+                        height: dp(45)
+                        MDLabel:
+                            text: "APELLIDOS Y NOMBRES"
+                            font_style: "Label"
+                            role: "small"
+                            theme_text_color: "Secondary"
+                        MDLabel:
+                            id: info_estudiante
+                            text: "-"
+                            font_style: "Body"
+                            role: "medium"
+
+                    BoxLayout:
+                        orientation: 'vertical'
+                        spacing: dp(2)
+                        size_hint_y: None
+                        height: dp(45)
+                        MDLabel:
+                            text: "NRO. DOCUMENTO"
+                            font_style: "Label"
+                            role: "small"
+                            theme_text_color: "Secondary"
+                        MDLabel:
+                            id: info_nrodoc
+                            text: "-"
+                            font_style: "Body"
+                            role: "medium"
+
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        spacing: dp(10)
+                        size_hint_y: None
+                        height: dp(45)
+                        
+                        BoxLayout:
+                            orientation: 'vertical'
+                            spacing: dp(2)
+                            MDLabel:
+                                text: "GRADO"
+                                font_style: "Label"
+                                role: "small"
+                                theme_text_color: "Secondary"
+                            MDLabel:
+                                id: info_grado
+                                text: "-"
+                                font_style: "Body"
+                                role: "medium"
+
+                        BoxLayout:
+                            orientation: 'vertical'
+                            spacing: dp(2)
+                            MDLabel:
+                                text: "SECCIÓN"
+                                font_style: "Label"
+                                role: "small"
+                                theme_text_color: "Secondary"
+                            MDLabel:
+                                id: info_seccion
+                                text: "-"
+                                font_style: "Body"
+                                role: "medium"
+
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        spacing: dp(10)
+                        size_hint_y: None
+                        height: dp(45)
+
+                        BoxLayout:
+                            orientation: 'vertical'
+                            spacing: dp(2)
+                            MDLabel:
+                                text: "TURNO"
+                                font_style: "Label"
+                                role: "small"
+                                theme_text_color: "Secondary"
+                            MDLabel:
+                                id: info_turno
+                                text: "-"
+                                font_style: "Body"
+                                role: "medium"
+
+                        BoxLayout:
+                            orientation: 'vertical'
+                            spacing: dp(2)
+                            MDLabel:
+                                text: "AÑO ESCOLAR"
+                                font_style: "Label"
+                                role: "small"
+                                theme_text_color: "Secondary"
+                            MDLabel:
+                                id: info_anio
+                                text: "-"
+                                font_style: "Body"
+                                role: "medium"
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.volver_al_menu()
+            MDButtonText:
+                text: "VOLVER AL MENÚ"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        Widget:
+            size_hint_y: None
+            height: dp(5)
+
+<PaymentsScreen>:
+    name: 'payments'
+    canvas.before:
+        Color:
+            rgba: 0.96, 0.97, 0.99, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(12)
+        spacing: dp(10)
+
+        MDLabel:
+            text: "ESTADO DE CUENTA - PAGOS"
+            font_style: "Headline"
+            role: "small"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.0, 0.45, 0.45, 1
+            bold: True
+            size_hint_y: None
+            height: dp(35)
+
+        # --- BARRA DE PESTAÑAS (M3) ---
+        MDTabsPrimary:
+            id: payments_tabs
+            size_hint_y: None
+            height: dp(48)
+            on_tab_switch: root.cambiar_pestana(*args)  # Lógica para alternar las vistas
+            
+            MDTabsItem:
+                value: "Pendientes"
+                MDTabsItemText:
+                    text: "Pendientes"
+
+            MDTabsItem:
+                value: "Realizados"
+                MDTabsItemText:
+                    text: "Historial Pagos"
+
+        # --- CONTENEDOR REAL DE CONTENIDO ---
+        MDScreenManager:
+            id: tabs_manager
+            size_hint_y: 1
+
+            MDScreen:
+                name: "screen_pendientes"
+                ScrollView:
+                    do_scroll_x: False
+                    do_scroll_y: True
+                    BoxLayout:
+                        id: container_pendientes
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(10)
+                        padding: dp(10)
+
+            MDScreen:
+                name: "screen_realizados"
+                ScrollView:
+                    do_scroll_x: False
+                    do_scroll_y: True
+                    BoxLayout:
+                        id: container_realizados
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(10)
+                        padding: dp(10)
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.volver_al_menu()
+            MDButtonText:
+                text: "VOLVER AL MENÚ"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        Widget:
+            size_hint_y: None
+            height: dp(5)
+
+
+<NotificationsScreen>:
+    name: 'notifications'
+    canvas.before:
+        Color:
+            rgba: 0.96, 0.97, 0.99, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(12)
+        spacing: dp(10)
+
+        MDLabel:
+            text: "COMUNICADOS INFORMATIVOS"
+            font_style: "Headline"
+            role: "small"
+            halign: "center"
+            theme_text_color: "Custom"
+            text_color: 0.0, 0.45, 0.45, 1
+            bold: True
+            size_hint_y: None
+            height: dp(35)
+
+        MDTabsPrimary:
+            id: notifications_tabs
+            size_hint_y: None
+            height: dp(48)
+            on_tab_switch: root.cambiar_pestana(*args)
+
+            MDTabsItem:
+                value: "NoLeidos"
+                MDTabsItemText:
+                    text: "No Leídos"
+
+            MDTabsItem:
+                value: "Leidos"
+                MDTabsItemText:
+                    text: "Historial / Leídos"
+
+        MDScreenManager:
+            id: notifications_tabs_manager
+            size_hint_y: 1
+
+            MDScreen:
+                name: "screen_no_leidos"
+                ScrollView:
+                    do_scroll_x: False
+                    do_scroll_y: True
+                    BoxLayout:
+                        id: container_no_leidos
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(12)
+                        padding: dp(10)
+
+            MDScreen:
+                name: "screen_leidos"
+                ScrollView:
+                    do_scroll_x: False
+                    do_scroll_y: True
+                    BoxLayout:
+                        id: container_leidos
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(12)
+                        padding: dp(10)
+
+        MDButton:
+            style: "filled"
+            md_bg_color: 0.0, 0.65, 0.65, 1
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5}
+            on_release: root.volver_al_menu()
+            MDButtonText:
+                text: "VOLVER AL MENÚ"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
+
+        Widget:
+            size_hint_y: None
+            height: dp(5)

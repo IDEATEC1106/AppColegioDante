@@ -55,8 +55,9 @@ jobs:
     - name: Install Buildozer and Cython
       run: |
         python -m pip install --upgrade pip
-        pip install --upgrade cython==0.29.33 git+https://github.com/kivy/buildozer.git@master
-
+        pip install --upgrade cython==0.29.33 https://github.com/kivy/buildozer/archive/master.zip
+        https://github.com/kivy/python-for-android/archive/master.zip
+        
     - name: Build APK with Buildozer
       run: |
         buildozer -v android debug

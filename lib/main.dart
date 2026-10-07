@@ -7,8 +7,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 const String apiUrl = "http://38.224.68.171:5000/api";
 
 void main() async {
+  // 1. Asegura la inicialización del binding nativo de Flutter
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 2. Inicializa Firebase antes de correr la app
   await Firebase.initializeApp();
+
   runApp(const MyApp());
 }
 

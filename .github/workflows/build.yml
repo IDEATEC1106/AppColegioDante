@@ -1,69 +1,35 @@
-name: Compile Kivy App to APK
+name: Build Flutter APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "master" ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          git \
-          ffmpeg \
-          libsdl2-dev \
-          libsdl2-image-dev \
-          libsdl2-mixer-dev \
-          libsdl2-ttf-dev \
-          libportmidi-dev \
-          libswscale-dev \
-          libavformat-dev \
-          libavcodec-dev \
-          zlib1g-dev \
-          libffi-dev \
-          libssl-dev \
-          autoconf \
-          libtool \
-          pkg-config \
-          zip \
-          unzip \
-          ant \
-          openjdk-17-jdk \
-          adb \
-          patch
-
-    - name: Set up Java
+    - name: Set up Java 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Buildozer and Cython
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade cython==0.29.33 https://github.com/kivy/buildozer/archive/master.zip
-        https://github.com/kivy/python-for-android/archive/master.zip
-        
-    - name: Build APK with Buildozer
-      run: |
-        buildozer -v android debug
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.2'
 
-    - name: Upload APK artifact
+    - name: Get Flutter dependencies
+      run: flutter pub get
+
+    - name: Build APK
+      run: flutter build apk --release
+
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: apk-colegiodante
-        path: bin/*.apk
+        name: app-release
+        path: build/app/outputs/flutter-apk/app-release.apk

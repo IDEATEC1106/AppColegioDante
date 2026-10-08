@@ -39,8 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-    if (_userController.text.trim().isEmpty || _passController.text.trim().isEmpty) {
-      _showError("Por favor, ingrese usuario y contraseña");
+    if (_userController.text.trim().isEmpty) {
+      _showError("Por favor, ingrese su usuario/código");
       return;
     }
 
@@ -57,8 +57,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data["success"] == true || data["status"] == "ok" || data["id_alumno"] != null) {
-          final int idAlumno = data["id_alumno"] ?? 1;
+        if (data["success"] == true && data["id_alumno"] != null) {
+          final int idAlumno = int.parse(data["id_alumno"].toString());
 
           if (!mounted) return;
           Navigator.pushReplacement(
@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError("Respuesta del servidor (${response.statusCode})");
       }
     } catch (e) {
-      _showError("Error de conexión con el servidor de la institución");
+      _showError("Error de conexión con el servidor");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -82,10 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -102,9 +99,8 @@ class _LoginScreenState extends State<LoginScreen> {
               Image.asset(
                 'escudodante.png',
                 height: 120,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.school, size: 100, color: Colors.blue);
-                },
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.school, size: 100, color: Colors.blue),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -119,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _userController,
                 decoration: const InputDecoration(
-                  labelText: 'Usuario',
+                  labelText: 'Usuario / Código',
                   prefixIcon: Icon(Icons.person),
                   border: OutlineInputBorder(),
                 ),
@@ -160,6 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// --- MENÚ PRINCIPAL ---
 class MainMenuScreen extends StatelessWidget {
   final int idAlumno;
 
@@ -175,9 +172,29 @@ class MainMenuScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // 1. INFORMACIÓN DEL ALUMNO
           Card(
             child: ListTile(
-              leading: const Icon(Icons.payment, color: Colors.blue),
+              leading: const Icon(Icons.person, color: Colors.blue, size: 30),
+              title: const Text('Información del Alumno'),
+              subtitle: const Text('Datos personales, grado y sección'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InfoAlumnoScreen(idAlumno: idAlumno),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // 2. ESTADO DE PAGOS
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.payment, color: Colors.blue, size: 30),
               title: const Text('Estado de Pagos'),
               subtitle: const Text('Consulta de cuotas pendientes y pagadas'),
               trailing: const Icon(Icons.arrow_forward_ios),
@@ -192,9 +209,11 @@ class MainMenuScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
+
+          // 3. COMUNICADOS
           Card(
             child: ListTile(
-              leading: const Icon(Icons.announcement, color: Colors.blue),
+              leading: const Icon(Icons.announcement, color: Colors.blue, size: 30),
               title: const Text('Comunicados'),
               subtitle: const Text('Avisos y notas del colegio'),
               trailing: const Icon(Icons.arrow_forward_ios),
@@ -214,6 +233,61 @@ class MainMenuScreen extends StatelessWidget {
   }
 }
 
+// --- PANTALLA INFORMACIÓN DEL ALUMNO ---
+class InfoAlumnoScreen extends StatelessWidget {
+  final int idAlumno;
+
+  const InfoAlumnoScreen({super.key, required this.idAlumno});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Información del Alumno'),
+        backgroundColor: Colors.blue,
+      ),
+      body: FutureBuilder<http.Response>(
+        future: http.get(Uri.parse("$apiUrl/alumno?id=$idAlumno")),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.statusCode != 200) {
+            return const Center(child: Text("No se pudo cargar la información del alumno"));
+          }
+
+          final data = jsonDecode(snapshot.data!.body);
+          if (data.isEmpty) {
+            return const Center(child: Text("No se encontraron registros"));
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: data.entries.map<Widget>((entry) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  child: ListTile(
+                    title: Text(
+                      entry.key.toString().replaceAll('_', ' ').toUpperCase(),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    subtitle: Text(
+                      entry.value?.toString() ?? 'N/A',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// --- PANTALLA PAGOS ---
 class PagosScreen extends StatelessWidget {
   final int idAlumno;
 
@@ -254,17 +328,27 @@ class PagosScreen extends StatelessWidget {
         if (!snapshot.hasData || snapshot.data!.statusCode != 200) {
           return const Center(child: Text("Error al cargar datos"));
         }
+
         List items = jsonDecode(snapshot.data!.body);
         if (items.isEmpty) {
-          return const Center(child: Text("No hay registros"));
+          return const Center(child: Text("No hay cuotas registradas"));
         }
+
         return ListView.builder(
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
-            return ListTile(
-              title: Text(item['concepto'] ?? 'Cuota'),
-              subtitle: Text("Monto: S/ ${item['monto']}"),
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: ListTile(
+                leading: const Icon(Icons.monetization_on, color: Colors.green),
+                title: Text(item['concepto'] ?? item['desc_concepto'] ?? 'Cuota'),
+                subtitle: Text("Fecha Vencimiento: ${item['fec_venc'] ?? item['fecha'] ?? 'N/A'}"),
+                trailing: Text(
+                  "S/ ${item['monto'] ?? item['monto_cuota'] ?? '0.00'}",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
             );
           },
         );
@@ -273,6 +357,7 @@ class PagosScreen extends StatelessWidget {
   }
 }
 
+// --- PANTALLA COMUNICADOS ---
 class ComunicadosScreen extends StatelessWidget {
   final int idAlumno;
 
@@ -311,19 +396,25 @@ class ComunicadosScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.statusCode != 200) {
-          return const Center(child: Text("Error al cargar datos"));
+          return const Center(child: Text("Error al cargar comunicados"));
         }
+
         List items = jsonDecode(snapshot.data!.body);
         if (items.isEmpty) {
           return const Center(child: Text("No hay comunicados"));
         }
+
         return ListView.builder(
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
-            return ListTile(
-              title: Text(item['titulo'] ?? 'Comunicado'),
-              subtitle: Text(item['mensaje'] ?? ''),
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: ListTile(
+                leading: const Icon(Icons.mail, color: Colors.blue),
+                title: Text(item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado'),
+                subtitle: Text(item['comu_detalle'] ?? item['mensaje'] ?? ''),
+              ),
             );
           },
         );

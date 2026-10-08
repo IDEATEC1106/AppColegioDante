@@ -338,15 +338,24 @@ class PagosScreen extends StatelessWidget {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
+
+            final String concepto = item['Conceptos'] ?? item['concepto'] ?? item['desc_concepto'] ?? 'Cuota';
+            final String fecha = item['Fch_Emi'] ?? item['Fch_Pago'] ?? item['fec_venc'] ?? 'N/A';
+            final String comprobante = item['Comprobante'] ?? '';
+            final String monto = item['Total'] ?? item['monto'] ?? item['monto_cuota'] ?? '0.00';
+
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               child: ListTile(
                 leading: const Icon(Icons.monetization_on, color: Colors.green),
-                title: Text(item['concepto'] ?? item['desc_concepto'] ?? 'Cuota'),
-                subtitle: Text("Fecha Vencimiento: ${item['fec_venc'] ?? item['fecha'] ?? 'N/A'}"),
+                title: Text(
+                  comprobante.isNotEmpty ? "$comprobante - $concepto" : concepto,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text("Fecha: $fecha"),
                 trailing: Text(
-                  "S/ ${item['monto'] ?? item['monto_cuota'] ?? '0.00'}",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  "S/ $monto",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
                 ),
               ),
             );
@@ -408,12 +417,36 @@ class ComunicadosScreen extends StatelessWidget {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
+
+            final String asunto = item['Asunto'] ?? item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado';
+            final String detalle = item['Detalle'] ?? item['comu_detalle'] ?? item['mensaje'] ?? '';
+            final String fecha = item['Fecha'] ?? item['comu_fecha'] ?? '';
+            final String remitente = item['Remitente'] ?? '';
+
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               child: ListTile(
                 leading: const Icon(Icons.mail, color: Colors.blue),
-                title: Text(item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado'),
-                subtitle: Text(item['comu_detalle'] ?? item['mensaje'] ?? ''),
+                title: Text(asunto, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAlignment.start,
+                  children: [
+                    if (detalle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(detalle, style: const TextStyle(color: Colors.black87)),
+                    ],
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (remitente.isNotEmpty)
+                          Text("De: $remitente", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        if (fecha.isNotEmpty)
+                          Text("Fecha: $fecha", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },

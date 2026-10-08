@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const String apiUrl = "http://38.224.68.171:5000/api";
 
@@ -469,6 +470,42 @@ class PagosScreen extends StatelessWidget {
 
   const PagosScreen({super.key, required this.idAlumno});
 
+  Future<void> _abrirBoleta(BuildContext context, dynamic idCaja) async {
+    if (idCaja == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No se encontró el ID de caja para este pago"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final Uri url = Uri.parse("$apiUrl/boleta/$idCaja");
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No se pudo abrir la boleta"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error al abrir boleta: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -523,6 +560,8 @@ class PagosScreen extends StatelessWidget {
             final String modoPago = item['Modo'] ?? item['modo'] ?? '';
             final String fechaVence = item['Fch_Ven'] ?? item['fch_ven'] ?? item['fec_venc'] ?? 'N/A';
 
+            final dynamic idCaja = item['id_caja'] ?? item['Id_Caja'] ?? item['idCaja'] ?? item['idcaja'];
+
             String subtitulo = "";
             if (esPagada) {
               subtitulo = "Cancelado: ${fechaPago.isNotEmpty ? fechaPago : 'N/A'}";
@@ -545,9 +584,26 @@ class PagosScreen extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(subtitulo),
-                trailing: Text(
-                  "S/ $monto",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "S/ $monto",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    if (esPagada) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                        tooltip: 'Ver Boleta',
+                        onPressed: () => _abrirBoleta(context, idCaja),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             );

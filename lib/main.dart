@@ -507,7 +507,7 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
             final String remitente = item['Remitente'] ?? '';
 
             // Campos específicos para Comunicados Leídos
-            final String fechaLectura = item['Leidos'] ?? item['leidos'] ?? '';
+            final String fechaLectura = item['Leido'] ?? item['leido'] ?? '';
             final String horaLectura = item['Hora'] ?? item['hora'] ?? '';
 
             return Card(

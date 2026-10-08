@@ -310,15 +310,15 @@ class PagosScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildList("$apiUrl/cuotas_pendientes?id=$idAlumno"),
-            _buildList("$apiUrl/cuotas_pagadas?id=$idAlumno"),
+            _buildList("$apiUrl/cuotas_pendientes?id=$idAlumno", false),
+            _buildList("$apiUrl/cuotas_pagadas?id=$idAlumno", true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildList(String url) {
+  Widget _buildList(String url, bool esPagada) {
     return FutureBuilder<http.Response>(
       future: http.get(Uri.parse(url)),
       builder: (context, snapshot) {
@@ -340,19 +340,36 @@ class PagosScreen extends StatelessWidget {
             final item = items[index];
 
             final String concepto = item['Conceptos'] ?? item['concepto'] ?? item['desc_concepto'] ?? 'Cuota';
-            final String fecha = item['Fch_Ven'] ?? item['fch_ven'] ?? item['fec_venc'] ?? 'N/A';
             final String comprobante = item['Comprobante'] ?? '';
             final String monto = item['Total'] ?? item['monto'] ?? item['monto_cuota'] ?? '0.00';
+
+            // Datos específicos según sea pagada o pendiente
+            final String fechaPago = item['fech_Pago'] ?? item['Fch_Pago'] ?? item['fech_pago'] ?? '';
+            final String modoPago = item['Modo'] ?? item['modo'] ?? '';
+            final String fechaVence = item['Fch_Ven'] ?? item['fch_ven'] ?? item['fec_venc'] ?? 'N/A';
+
+            String subtitulo = "";
+            if (esPagada) {
+              subtitulo = "Cancelado: ${fechaPago.isNotEmpty ? fechaPago : 'N/A'}";
+              if (modoPago.isNotEmpty) {
+                subtitulo += " - Modo: $modoPago";
+              }
+            } else {
+              subtitulo = "Fecha Vence: $fechaVence";
+            }
 
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               child: ListTile(
-                leading: const Icon(Icons.monetization_on, color: Colors.green),
+                leading: Icon(
+                  esPagada ? Icons.check_circle : Icons.monetization_on,
+                  color: esPagada ? Colors.green : Colors.orange,
+                ),
                 title: Text(
                   comprobante.isNotEmpty ? "$comprobante - $concepto" : concepto,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text("Fecha Vence: $fecha"),
+                subtitle: Text(subtitulo),
                 trailing: Text(
                   "S/ $monto",
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
@@ -489,7 +506,15 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
             final String asunto = item['Asunto'] ?? item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado';
             final String fecha = item['Fecha'] ?? item['comu_fecha'] ?? '';
             final String remitente = item['Remitente'] ?? '';
-            final String fechaLectura = item['Fecha_Lectura'] ?? item['Fch_Lectura'] ?? item['fecha_lectura'] ?? item['FechaLectura'] ?? item['Fecha'] ?? '';
+
+            // Obtener fecha y hora de lectura desde el SP sp_Comunicados_GetComuLxAluApp
+            final String fechaLeido = item['Leidos'] ?? item['leidos'] ?? item['Fecha_Lectura'] ?? '';
+            final String horaLeido = item['Hora'] ?? item['hora'] ?? '';
+
+            String fechaHoraLectura = fechaLeido;
+            if (horaLeido.isNotEmpty) {
+              fechaHoraLectura += " $horaLeido";
+            }
 
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -528,7 +553,7 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                               ),
                             ],
                           ] else ...[
-                            // LEÍDOS: Asunto, Remitente y Fecha/Hora de lectura
+                            // LEÍDOS: Asunto, Remitente y Fecha/Hora de lectura (Leidos + Hora)
                             Text(
                               asunto,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -540,10 +565,10 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                                 style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                             ],
-                            if (fechaLectura.isNotEmpty) ...[
+                            if (fechaHoraLectura.trim().isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
-                                "Leído: $fechaLectura",
+                                "Leído: $fechaHoraLectura",
                                 style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
                               ),
                             ],

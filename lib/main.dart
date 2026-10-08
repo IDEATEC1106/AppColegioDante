@@ -343,7 +343,6 @@ class PagosScreen extends StatelessWidget {
             final String comprobante = item['Comprobante'] ?? '';
             final String monto = item['Total'] ?? item['monto'] ?? item['monto_cuota'] ?? '0.00';
 
-            // Datos específicos según sea pagada o pendiente
             final String fechaPago = item['fech_Pago'] ?? item['Fch_Pago'] ?? item['fech_pago'] ?? '';
             final String modoPago = item['Modo'] ?? item['modo'] ?? '';
             final String fechaVence = item['Fch_Ven'] ?? item['fch_ven'] ?? item['fec_venc'] ?? 'N/A';
@@ -433,7 +432,7 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                 if (fecha.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Text("Fecha: $fecha", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    child: Text("Fecha Emisión: $fecha", style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   ),
                 const Divider(),
                 const SizedBox(height: 8),
@@ -504,17 +503,12 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
             final item = items[index];
 
             final String asunto = item['Asunto'] ?? item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado';
-            final String fecha = item['Fecha'] ?? item['comu_fecha'] ?? '';
+            final String fechaEmision = item['Fecha'] ?? item['comu_fecha'] ?? '';
             final String remitente = item['Remitente'] ?? '';
 
-            // Obtener fecha y hora de lectura desde el SP sp_Comunicados_GetComuLxAluApp
-            final String fechaLeido = item['Leidos'] ?? item['leidos'] ?? item['Fecha_Lectura'] ?? '';
-            final String horaLeido = item['Hora'] ?? item['hora'] ?? '';
-
-            String fechaHoraLectura = fechaLeido;
-            if (horaLeido.isNotEmpty) {
-              fechaHoraLectura += " $horaLeido";
-            }
+            // Campos específicos para Comunicados Leídos
+            final String fechaLectura = item['Leidos'] ?? item['leidos'] ?? '';
+            final String horaLectura = item['Hora'] ?? item['hora'] ?? '';
 
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -534,10 +528,10 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (esNoLeido) ...[
-                            // NO LEÍDOS: Fecha primero, luego Asunto, luego Remitente
-                            if (fecha.isNotEmpty)
+                            // NO LEÍDOS: Fecha Emisión -> Asunto -> Remitente
+                            if (fechaEmision.isNotEmpty)
                               Text(
-                                "Fecha: $fecha",
+                                "Fecha: $fechaEmision",
                                 style: const TextStyle(fontSize: 11, color: Colors.grey),
                               ),
                             const SizedBox(height: 2),
@@ -553,7 +547,13 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                               ),
                             ],
                           ] else ...[
-                            // LEÍDOS: Asunto, Remitente y Fecha/Hora de lectura (Leidos + Hora)
+                            // LEÍDOS: Fecha Emisión -> Asunto -> Remitente -> Fecha y Hora de Lectura
+                            if (fechaEmision.isNotEmpty)
+                              Text(
+                                "Emisión: $fechaEmision",
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            const SizedBox(height: 2),
                             Text(
                               asunto,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -565,10 +565,10 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                                 style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                             ],
-                            if (fechaHoraLectura.trim().isNotEmpty) ...[
+                            if (fechaLectura.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
-                                "Leído: $fechaHoraLectura",
+                                "Leído: $fechaLectura${horaLectura.isNotEmpty ? ' ' + horaLectura : ''}",
                                 style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
                               ),
                             ],

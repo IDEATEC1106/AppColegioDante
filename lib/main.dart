@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -5,6 +6,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 const String apiUrl = "http://38.224.68.171:5000/api";
+
+// Clave global para gestionar la navegación desde el temporizador
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Manejador de notificaciones en segundo plano / app cerrada
 @pragma('vm:entry-point')
@@ -25,19 +29,77 @@ void main() async {
   runApp(const MyApp());
 }
 
+// --- WIDGET DETECTOR DE INACTIVIDAD ---
+class AutoLogoutWrapper extends StatefulWidget {
+  final Widget child;
+  const AutoLogoutWrapper({super.key, required this.child});
+
+  @override
+  State<AutoLogoutWrapper> createState() => _AutoLogoutWrapperState();
+}
+
+class _AutoLogoutWrapperState extends State<AutoLogoutWrapper> {
+  Timer? _timer;
+
+  // Tiempo límite de inactividad (2 minutos)
+  final Duration _inactivityTimeout = const Duration(minutes: 2);
+
+  @override
+  void initState() {
+    super.initState();
+    _resetTimer();
+  }
+
+  void _resetTimer() {
+    _timer?.cancel();
+    _timer = Timer(_inactivityTimeout, _logout);
+  }
+
+  void _logout() {
+    _timer?.cancel();
+    final currentState = navigatorKey.currentState;
+    if (currentState != null) {
+      // Redirige al login y limpia el historial de pantallas activas
+      currentState.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _resetTimer(),
+      onPointerMove: (_) => _resetTimer(),
+      child: widget.child,
+    );
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Colegio Dante Alighieri',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: false,
+    return AutoLogoutWrapper(
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        title: 'Colegio Dante Alighieri',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: false,
+        ),
+        home: const LoginScreen(),
       ),
-      home: const LoginScreen(),
     );
   }
 }
@@ -53,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true; // Variable para alternar la visibilidad
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -61,7 +123,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _configurarEscuchadorNotificaciones();
   }
 
-  // Escuchar notificaciones cuando la app está abierta en primer plano (Foreground)
   void _configurarEscuchadorNotificaciones() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null && mounted) {
@@ -78,12 +139,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  // Obtiene el Token FCM y lo envía a la base de datos
   Future<void> _registrarTokenFCM(int idAlumno) async {
     try {
       FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-      // Solicitar permisos de notificación (Android 13+ e iOS)
       NotificationSettings settings = await messaging.requestPermission(
         alert: true,
         badge: true,
@@ -92,11 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        
         String? token = await messaging.getToken();
 
         if (token != null && token.isNotEmpty) {
-          // Enviar token al backend para actualizar el campo apo_fcm_token
           await http.post(
             Uri.parse("$apiUrl/guardar_fcm_token"),
             headers: {"Content-Type": "application/json"},
@@ -134,7 +190,6 @@ class _LoginScreenState extends State<LoginScreen> {
         if (data["success"] == true && data["id_alumno"] != null) {
           final int idAlumno = int.parse(data["id_alumno"].toString());
 
-          // Registrar el token FCM antes de redirigir al menú
           await _registrarTokenFCM(idAlumno);
 
           if (!mounted) return;
@@ -249,7 +304,6 @@ class MainMenuScreen extends StatelessWidget {
 
   const MainMenuScreen({super.key, required this.idAlumno});
 
-  // Ventana de confirmación para Cerrar Sesión
   void _confirmarCierreSesion(BuildContext context) {
     showDialog(
       context: context,
@@ -268,9 +322,7 @@ class MainMenuScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () {
-              Navigator.pop(dialogContext); // Cerrar diálogo
-              
-              // Redirigir al Login eliminando todo el historial de pantallas
+              Navigator.pop(dialogContext);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -301,7 +353,6 @@ class MainMenuScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // 1. INFORMACIÓN DEL ALUMNO
           Card(
             child: ListTile(
               leading: const Icon(Icons.person, color: Colors.blue, size: 30),
@@ -319,8 +370,6 @@ class MainMenuScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-
-          // 2. ESTADO DE PAGOS
           Card(
             child: ListTile(
               leading: const Icon(Icons.payment, color: Colors.blue, size: 30),
@@ -338,8 +387,6 @@ class MainMenuScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-
-          // 3. COMUNICADOS
           Card(
             child: ListTile(
               leading: const Icon(Icons.announcement, color: Colors.blue, size: 30),
@@ -361,6 +408,7 @@ class MainMenuScreen extends StatelessWidget {
     );
   }
 }
+
 // --- PANTALLA INFORMACIÓN DEL ALUMNO ---
 class InfoAlumnoScreen extends StatelessWidget {
   final int idAlumno;
@@ -634,7 +682,6 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
             final String fechaEmision = item['Fecha'] ?? item['comu_fecha'] ?? '';
             final String remitente = item['Remitente'] ?? '';
 
-            // Campos específicos para Comunicados Leídos
             final String fechaLectura = item['Leido'] ?? item['leido'] ?? '';
             final String horaLectura = item['Hora'] ?? item['hora'] ?? '';
 

@@ -496,7 +496,7 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       esNoLeido ? Icons.mark_email_unread : Icons.mark_email_read,
@@ -506,7 +506,7 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (esNoLeido) ...[
                             // NO LEÍDOS: Fecha primero, luego Asunto, luego Remitente

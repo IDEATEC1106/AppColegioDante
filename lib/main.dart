@@ -8,28 +8,6 @@ const String apiUrl = "http://38.224.68.171:5000/api";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  try {
-    // Inicialización explícita para Android
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSy...", // Reemplaza con tu apiKey de google-services.json
-        appId: "1:...:android:...", // Reemplaza con tu mobsdk_app_id / current_key
-        messagingSenderId: "...", // Reemplaza con tu project_number
-        projectId: "...", // Reemplaza con tu project_id
-      ),
-    );
-
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-  } catch (e) {
-    debugPrint("Error al inicializar Firebase: $e");
-  }
-
   runApp(const MyApp());
 }
 

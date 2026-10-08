@@ -367,10 +367,78 @@ class PagosScreen extends StatelessWidget {
 }
 
 // --- PANTALLA COMUNICADOS ---
-class ComunicadosScreen extends StatelessWidget {
+class ComunicadosScreen extends StatefulWidget {
   final int idAlumno;
 
   const ComunicadosScreen({super.key, required this.idAlumno});
+
+  @override
+  State<ComunicadosScreen> createState() => _ComunicadosScreenState();
+}
+
+class _ComunicadosScreenState extends State<ComunicadosScreen> {
+
+  Future<void> _marcarComoLeido(dynamic idComunica) async {
+    if (idComunica == null) return;
+    try {
+      await http.post(
+        Uri.parse("$apiUrl/actualizar_comunicado"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"id": idComunica}),
+      );
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
+
+  void _mostrarPopUpDetalle(BuildContext context, Map<String, dynamic> item, bool esNoLeido) {
+    final String asunto = item['Asunto'] ?? item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado';
+    final String detalle = item['Detalle'] ?? item['comu_detalle'] ?? item['mensaje'] ?? 'Sin detalle';
+    final String fecha = item['Fecha'] ?? item['comu_fecha'] ?? '';
+    final String remitente = item['Remitente'] ?? '';
+    final dynamic idComunica = item['id_comunica'] ?? item['id'];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(asunto, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (remitente.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Text("De: $remitente", style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black54)),
+                  ),
+                if (fecha.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Text("Fecha: $fecha", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ),
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(detalle, style: const TextStyle(fontSize: 15, height: 1.3)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                if (esNoLeido && idComunica != null) {
+                  await _marcarComoLeido(idComunica);
+                }
+              },
+              child: const Text("CERRAR", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -389,15 +457,15 @@ class ComunicadosScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildList("$apiUrl/comunicados_no_leidos?id=$idAlumno"),
-            _buildList("$apiUrl/comunicados_leidos?id=$idAlumno"),
+            _buildList("$apiUrl/comunicados_no_leidos?id=${widget.idAlumno}", true),
+            _buildList("$apiUrl/comunicados_leidos?id=${widget.idAlumno}", false),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildList(String url) {
+  Widget _buildList(String url, bool esNoLeido) {
     return FutureBuilder<http.Response>(
       future: http.get(Uri.parse(url)),
       builder: (context, snapshot) {
@@ -419,33 +487,33 @@ class ComunicadosScreen extends StatelessWidget {
             final item = items[index];
 
             final String asunto = item['Asunto'] ?? item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado';
-            final String detalle = item['Detalle'] ?? item['comu_detalle'] ?? item['mensaje'] ?? '';
             final String fecha = item['Fecha'] ?? item['comu_fecha'] ?? '';
             final String remitente = item['Remitente'] ?? '';
 
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               child: ListTile(
-                leading: const Icon(Icons.mail, color: Colors.blue),
+                leading: Icon(
+                  esNoLeido ? Icons.mark_email_unread : Icons.mark_email_read,
+                  color: esNoLeido ? Colors.orange : Colors.blue,
+                ),
                 title: Text(asunto, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                subtitle: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (detalle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(detalle, style: const TextStyle(color: Colors.black87)),
-                    ],
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (remitente.isNotEmpty)
-                          Text("De: $remitente", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                        if (fecha.isNotEmpty)
-                          Text("Fecha: $fecha", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                      ],
-                    ),
+                    if (remitente.isNotEmpty)
+                      Text("De: $remitente", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    if (fecha.isNotEmpty)
+                      Text("Fecha: $fecha", style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
+                ),
+                trailing: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  ),
+                  onPressed: () => _mostrarPopUpDetalle(context, item, esNoLeido),
+                  child: const Text("Ver Detalle", style: TextStyle(fontSize: 12, color: Colors.white)),
                 ),
               ),
             );

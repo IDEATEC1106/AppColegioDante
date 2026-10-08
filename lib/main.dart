@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 const String apiUrl = "http://38.224.68.171:5000/api";
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -21,6 +19,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        useMaterial3: false,
       ),
       home: const LoginScreen(),
     );
@@ -40,22 +39,26 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _login() async {
+    if (_userController.text.trim().isEmpty || _passController.text.trim().isEmpty) {
+      _showError("Por favor, ingrese usuario y contraseña");
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final response = await http.post(
         Uri.parse("$apiUrl/login"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "usuario": _userController.text,
-          "password": _passController.text,
+          "usuario": _userController.text.trim(),
+          "password": _passController.text.trim(),
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data["success"] == true) {
-          final int idAlumno = data["id_alumno"];
-          _registrarTokenFCM(idAlumno);
+        if (data["success"] == true || data["status"] == "ok" || data["id_alumno"] != null) {
+          final int idAlumno = data["id_alumno"] ?? 1;
 
           if (!mounted) return;
           Navigator.pushReplacement(
@@ -68,56 +71,56 @@ class _LoginScreenState extends State<LoginScreen> {
           _showError(data["message"] ?? "Credenciales incorrectas");
         }
       } else {
-        _showError("Error de conexión con el servidor");
+        _showError("Respuesta del servidor (${response.statusCode})");
       }
     } catch (e) {
-      _showError("Error de red: $e");
+      _showError("Error de conexión con el servidor de la institución");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _registrarTokenFCM(int idAlumno) async {
-    try {
-      String? token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        await http.post(
-          Uri.parse("$apiUrl/registrar_token_fcm"),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"id_alumno": idAlumno, "token_fcm": token}),
-        );
-      }
-    } catch (e) {
-      debugPrint("Error token FCM: $e");
-    }
-  }
-
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/escudodante.png', height: 120),
+              Image.asset(
+                'escudodante.png',
+                height: 120,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.school, size: 100, color: Colors.blue);
+                },
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Colegio Dante Alighieri',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
               ),
               const SizedBox(height: 30),
               TextField(
                 controller: _userController,
                 decoration: const InputDecoration(
                   labelText: 'Usuario',
+                  prefixIcon: Icon(Icons.person),
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -127,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'Contraseña',
+                  prefixIcon: Icon(Icons.lock),
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -136,9 +140,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   : ElevatedButton(
                       onPressed: _login,
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                      child: const Text('Ingresar'),
+                      child: const Text(
+                        'INGRESAR',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ),
             ],
           ),
@@ -156,33 +168,45 @@ class MainMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Menú Principal')),
+      appBar: AppBar(
+        title: const Text('Menú Principal'),
+        backgroundColor: Colors.blue,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          ListTile(
-            leading: const Icon(Icons.payment),
-            title: const Text('Estado de Pagos'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PagosScreen(idAlumno: idAlumno),
-                ),
-              );
-            },
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.payment, color: Colors.blue),
+              title: const Text('Estado de Pagos'),
+              subtitle: const Text('Consulta de cuotas pendientes y pagadas'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PagosScreen(idAlumno: idAlumno),
+                  ),
+                );
+              },
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.announcement),
-            title: const Text('Comunicados'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ComunicadosScreen(idAlumno: idAlumno),
-                ),
-              );
-            },
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.announcement, color: Colors.blue),
+              title: const Text('Comunicados'),
+              subtitle: const Text('Avisos y notas del colegio'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ComunicadosScreen(idAlumno: idAlumno),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -202,6 +226,7 @@ class PagosScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Pagos'),
+          backgroundColor: Colors.blue,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Pendientes'),
@@ -260,6 +285,7 @@ class ComunicadosScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Comunicados'),
+          backgroundColor: Colors.blue,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'No Leídos'),

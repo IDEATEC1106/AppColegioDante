@@ -1,3 +1,8 @@
+Aquí tienes el código completo y corregido de lib/main.dart.
+
+Se integró la validación tieneBoletaReg en PagosScreen: el ícono del PDF cambia a gris cuando la cuota no tiene un id_caja válido, y al hacer clic muestra la alerta "Boleta no registrada" (tanto por falta de ID como si el servidor retorna un error 404).
+
+Dart
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -471,23 +476,52 @@ class PagosScreen extends StatelessWidget {
   const PagosScreen({super.key, required this.idAlumno});
 
   Future<void> _abrirBoleta(BuildContext context, dynamic idCaja) async {
-    if (idCaja == null) {
+    // 1. Validar si existe el ID de caja en la base de datos
+    if (idCaja == null || idCaja.toString().trim().isEmpty || idCaja.toString() == '0') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("No se encontró el ID de caja para este pago"),
+          content: Text("Boleta no registrada"),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    final Uri url = Uri.parse("$apiUrl/boleta/$idCaja");
+    final String urlString = "$apiUrl/boleta/$idCaja";
+    final Uri url = Uri.parse(urlString);
 
+    // 2. Comprobar en el servidor si el archivo PDF existe
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
+      final response = await http.head(url).timeout(const Duration(seconds: 3));
+      if (response.statusCode == 404) {
         if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Boleta no registrada"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    } catch (_) {
+      // Si el HEAD falla por red, se intenta la apertura directa
+    }
+
+    // 3. Abrir la boleta PDF en el navegador / visor predeterminado
+    try {
+      bool launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        launched = await launchUrl(
+          url,
+          mode: LaunchMode.platformDefault,
+        );
+      }
+
+      if (!launched && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("No se pudo abrir la boleta"),
@@ -561,6 +595,7 @@ class PagosScreen extends StatelessWidget {
             final String fechaVence = item['Fch_Ven'] ?? item['fch_ven'] ?? item['fec_venc'] ?? 'N/A';
 
             final dynamic idCaja = item['id_caja'] ?? item['Id_Caja'] ?? item['idCaja'] ?? item['idcaja'];
+            final bool tieneBoletaReg = idCaja != null && idCaja.toString().trim().isNotEmpty && idCaja.toString() != '0';
 
             String subtitulo = "";
             if (esPagada) {
@@ -598,8 +633,11 @@ class PagosScreen extends StatelessWidget {
                     if (esPagada) ...[
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
-                        tooltip: 'Ver Boleta',
+                        icon: Icon(
+                          Icons.picture_as_pdf,
+                          color: tieneBoletaReg ? Colors.red : Colors.grey,
+                        ),
+                        tooltip: tieneBoletaReg ? 'Ver Boleta' : 'Boleta no registrada',
                         onPressed: () => _abrirBoleta(context, idCaja),
                       ),
                     ],

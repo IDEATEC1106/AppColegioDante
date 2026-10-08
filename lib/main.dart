@@ -1,11 +1,27 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 const String apiUrl = "http://38.224.68.171:5000/api";
 
-void main() {
+// Manejador de notificaciones en segundo plano / app cerrada
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint("Notificación recibida en background: ${message.messageId}");
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar Firebase
+  await Firebase.initializeApp();
+  
+  // Configurar escuchador de segundo plano
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   runApp(const MyApp());
 }
 
@@ -38,6 +54,63 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _configurarEscuchadorNotificaciones();
+  }
+
+  // Escuchar notificaciones cuando la app está abierta en primer plano (Foreground)
+  void _configurarEscuchadorNotificaciones() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "${message.notification!.title ?? 'Nuevo Comunicado'}\n${message.notification!.body ?? ''}",
+            ),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+  }
+
+  // Obtiene el Token FCM y lo envía a la base de datos
+  Future<void> _registrarTokenFCM(int idAlumno) async {
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+      // Solicitar permisos de notificación (Android 13+ e iOS)
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        
+        String? token = await messaging.getToken();
+
+        if (token != null && token.isNotEmpty) {
+          // Enviar token al backend para actualizar el campo apo_fcm_token
+          await http.post(
+            Uri.parse("$apiUrl/guardar_fcm_token"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "id_alumno": idAlumno,
+              "fcm_token": token,
+            }),
+          ).timeout(const Duration(seconds: 5));
+        }
+      }
+    } catch (e) {
+      debugPrint("Error al registrar token FCM: $e");
+    }
+  }
+
   Future<void> _login() async {
     if (_userController.text.trim().isEmpty) {
       _showError("Por favor, ingrese su usuario/código");
@@ -59,6 +132,9 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = jsonDecode(response.body);
         if (data["success"] == true && data["id_alumno"] != null) {
           final int idAlumno = int.parse(data["id_alumno"].toString());
+
+          // Registrar el token FCM antes de redirigir al menú
+          await _registrarTokenFCM(idAlumno);
 
           if (!mounted) return;
           Navigator.pushReplacement(
@@ -528,7 +604,6 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (esNoLeido) ...[
-                            // NO LEÍDOS: Fecha Emisión -> Asunto -> Remitente
                             if (fechaEmision.isNotEmpty)
                               Text(
                                 "Fecha: $fechaEmision",
@@ -547,7 +622,6 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
                               ),
                             ],
                           ] else ...[
-                            // LEÍDOS: Fecha Emisión -> Asunto -> Remitente -> Fecha y Hora de Lectura
                             if (fechaEmision.isNotEmpty)
                               Text(
                                 "Emisión: $fechaEmision",

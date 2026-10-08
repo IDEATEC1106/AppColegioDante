@@ -1,8 +1,3 @@
-Aquí tienes el código completo y corregido de lib/main.dart.
-
-Se integró la validación tieneBoletaReg en PagosScreen: el ícono del PDF cambia a gris cuando la cuota no tiene un id_caja válido, y al hacer clic muestra la alerta "Boleta no registrada" (tanto por falta de ID como si el servidor retorna un error 404).
-
-Dart
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';

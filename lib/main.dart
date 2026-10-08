@@ -429,7 +429,7 @@ class ComunicadosScreen extends StatelessWidget {
                 leading: const Icon(Icons.mail, color: Colors.blue),
                 title: Text(asunto, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Column(
-                  crossAxisAlignment: CrossAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (detalle.isNotEmpty) ...[
                       const SizedBox(height: 4),

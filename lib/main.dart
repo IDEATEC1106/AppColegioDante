@@ -482,7 +482,7 @@ class PagosScreen extends StatelessWidget {
                 subtitulo += " - Modo: $modoPago";
               }
             } else {
-              subtitulo = "Fecha Vence: $fechaVence";
+              subtitulo = "Vencimiento: $fechaVence";
             }
 
             return Card(

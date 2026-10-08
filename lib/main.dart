@@ -340,7 +340,7 @@ class PagosScreen extends StatelessWidget {
             final item = items[index];
 
             final String concepto = item['Conceptos'] ?? item['concepto'] ?? item['desc_concepto'] ?? 'Cuota';
-            final String fecha = item['Fecha'] ?? item['fecha'] ?? item['fec_venc'] ?? 'N/A';
+            final String fecha = item['Fch_Ven'] ?? item['fch_ven'] ?? item['fec_venc'] ?? 'N/A';
             final String comprobante = item['Comprobante'] ?? '';
             final String monto = item['Total'] ?? item['monto'] ?? item['monto_cuota'] ?? '0.00';
 

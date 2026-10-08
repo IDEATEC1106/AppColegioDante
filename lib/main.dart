@@ -340,7 +340,7 @@ class PagosScreen extends StatelessWidget {
             final item = items[index];
 
             final String concepto = item['Conceptos'] ?? item['concepto'] ?? item['desc_concepto'] ?? 'Cuota';
-            final String fecha = item['Fch_Emi'] ?? item['Fch_Pago'] ?? item['fec_venc'] ?? 'N/A';
+            final String fecha = item['Fecha'] ?? item['fecha'] ?? item['fec_venc'] ?? 'N/A';
             final String comprobante = item['Comprobante'] ?? '';
             final String monto = item['Total'] ?? item['monto'] ?? item['monto_cuota'] ?? '0.00';
 
@@ -352,7 +352,7 @@ class PagosScreen extends StatelessWidget {
                   comprobante.isNotEmpty ? "$comprobante - $concepto" : concepto,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text("Fecha: $fecha"),
+                subtitle: Text("Fecha Vence: $fecha"),
                 trailing: Text(
                   "S/ $monto",
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
@@ -489,31 +489,78 @@ class _ComunicadosScreenState extends State<ComunicadosScreen> {
             final String asunto = item['Asunto'] ?? item['comu_asunto'] ?? item['titulo'] ?? 'Comunicado';
             final String fecha = item['Fecha'] ?? item['comu_fecha'] ?? '';
             final String remitente = item['Remitente'] ?? '';
+            final String fechaLectura = item['Fecha_Lectura'] ?? item['Fch_Lectura'] ?? item['fecha_lectura'] ?? item['FechaLectura'] ?? item['Fecha'] ?? '';
 
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: ListTile(
-                leading: Icon(
-                  esNoLeido ? Icons.mark_email_unread : Icons.mark_email_read,
-                  color: esNoLeido ? Colors.orange : Colors.blue,
-                ),
-                title: Text(asunto, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  crossAxisAlignment: CrossAlignment.start,
                   children: [
-                    if (remitente.isNotEmpty)
-                      Text("De: $remitente", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                    if (fecha.isNotEmpty)
-                      Text("Fecha: $fecha", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Icon(
+                      esNoLeido ? Icons.mark_email_unread : Icons.mark_email_read,
+                      color: esNoLeido ? Colors.orange : Colors.blue,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAlignment.start,
+                        children: [
+                          if (esNoLeido) ...[
+                            // NO LEÍDOS: Fecha primero, luego Asunto, luego Remitente
+                            if (fecha.isNotEmpty)
+                              Text(
+                                "Fecha: $fecha",
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              asunto,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            if (remitente.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                "De: $remitente",
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                              ),
+                            ],
+                          ] else ...[
+                            // LEÍDOS: Asunto, Remitente y Fecha/Hora de lectura
+                            Text(
+                              asunto,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            if (remitente.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                "De: $remitente",
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                              ),
+                            ],
+                            if (fechaLectura.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                "Leído: $fechaLectura",
+                                style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      ),
+                      onPressed: () => _mostrarPopUpDetalle(context, item, esNoLeido),
+                      child: const Text("Ver Detalle", style: TextStyle(fontSize: 12, color: Colors.white)),
+                    ),
                   ],
-                ),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  ),
-                  onPressed: () => _mostrarPopUpDetalle(context, item, esNoLeido),
-                  child: const Text("Ver Detalle", style: TextStyle(fontSize: 12, color: Colors.white)),
                 ),
               ),
             );
